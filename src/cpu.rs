@@ -9,12 +9,11 @@ use itertools::join;
 use sdl2::Sdl;
 
 use display::Display;
+use spec;
 
 pub struct Cpu<'a> {
     display: Display<'a>,
-    rom: &'a File,
     cur_instr: u16,
-    base: u16,
 
     // Registers
     r_vx: [u8; 16],
@@ -24,43 +23,58 @@ pub struct Cpu<'a> {
     r_pc: u16,
     r_sp: u8,
     stack: [u16; 16],
+    mem: [u8; 4096],
 }
 
 impl<'a> Cpu<'a> {
     /// Initialize the CPU with all registers at 0
-    pub fn new(sdl_context: &Sdl, mut rom: &'a File) -> Cpu<'a> {
-        rom.seek(SeekFrom::Start(0)).unwrap();
-        let base = 0x200;
+    pub fn new(sdl_context: &Sdl, rom_file: &'a File) -> Cpu<'a> {
+        let mut mem = [0u8; spec::MEM_SIZE];
+
+        Cpu::read_rom(&mut mem, rom_file);
 
         Cpu {
-            rom: rom,
             display: Display::new(sdl_context),
             cur_instr: 0,
-            base: base,
 
             r_vx: [0; 16],
             r_i: 0,
             r_dt: 0,
             r_st: 0,
-            r_pc: base,
+            r_pc: spec::PROGRAM_START as u16,
             r_sp: 0,
             stack: [0; 16],
+            mem: mem,
+        }
+    }
+
+    /// Read the whole rom file and dumps it into memory
+    fn read_rom(mem: &mut [u8], mut rom_file: &File) {
+        let mut buf: Vec<u8> = Vec::new();
+
+        // Ensure that we are reading from the beginning of the file
+        rom_file.seek(SeekFrom::Start(0)).unwrap();
+        rom_file.read_to_end(&mut buf).unwrap();
+
+        for i in 0..buf.len() {
+            mem[i + spec::PROGRAM_START] = buf[i];
         }
     }
 
     /// Reads the next instruction on the rom.
     /// The position is set by the current value of PC
     pub fn read_instr(&mut self) -> u16 {
-        let mut buf = [0u8; 2];
-
-        self.rom.seek(SeekFrom::Start((self.r_pc - self.base) as u64)).unwrap();
-        self.rom.read(&mut buf).unwrap();
-
-        let instr = ((buf[0] as u16) << 8) | buf[1] as u16;
+        let instr = ((self.mem[self.r_pc as usize] as u16) << 8) |
+                    self.mem[self.r_pc as usize + 1] as u16;
 
         self.inc_pc();
         self.cur_instr = instr;
         instr
+    }
+
+    /// Read n bytes from memory, starting at addr
+    pub fn read_mem(&mut self, addr: usize, n: usize) -> Vec<u8> {
+        self.mem[addr..(addr + n)].to_vec()
     }
 
     /// Sets the PC register to a given address.
@@ -111,18 +125,6 @@ impl<'a> Cpu<'a> {
 
     pub fn get_display(&mut self) -> &mut Display<'a> {
         &mut self.display
-    }
-
-    /// Read n bytes from memory, starting at addr
-    pub fn read_mem(&mut self, addr: u16, n: u8) -> Vec<u8> {
-        if addr < 0x200 {
-            return vec![0; n as usize];
-        }
-        let mut buf = vec![0u8; n as usize];
-        self.rom.seek(SeekFrom::Start((addr - self.base) as u64)).unwrap();
-        self.rom.read(&mut buf).unwrap();
-
-        buf.to_vec()
     }
 }
 

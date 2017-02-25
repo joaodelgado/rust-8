@@ -66,7 +66,7 @@ fn main() {
 
         cpu.get_display().flush();
 
-        std::thread::sleep(Duration::from_millis(16));
+        std::thread::sleep(Duration::from_millis(10));
     }
 
     // let mut running = true;

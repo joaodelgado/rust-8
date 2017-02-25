@@ -272,7 +272,7 @@ impl Instr for Drw {
         let mut vf = 0;
 
         // Read data to be drawn
-        let raw_bytes = cpu.read_mem(i, n);
+        let raw_bytes = cpu.read_mem(i as usize, n as usize);
 
         let mut pixels: Vec<Pixel> = vec![];
         for (iter_y, byte) in raw_bytes.iter().enumerate() {
