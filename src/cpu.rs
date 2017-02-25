@@ -31,7 +31,8 @@ impl<'a> Cpu<'a> {
     pub fn new(sdl_context: &Sdl, rom_file: &'a File) -> Cpu<'a> {
         let mut mem = [0u8; spec::MEM_SIZE];
 
-        Cpu::read_rom(&mut mem, rom_file);
+        Cpu::load_sprites(&mut mem);
+        Cpu::load_rom(&mut mem, rom_file);
 
         Cpu {
             display: Display::new(sdl_context),
@@ -48,8 +49,30 @@ impl<'a> Cpu<'a> {
         }
     }
 
+    /// Load the built in font sprites
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    fn load_sprites(mem: &mut [u8]) {
+        let sprites = [
+            0b11110000, 0b00100000, 0b11110000, 0b11110000, 0b10010000, 0b11110000, 0b11110000,
+            0b10010000, 0b01100000, 0b00010000, 0b00010000, 0b10010000, 0b10000000, 0b10000000,
+            0b10010000, 0b00100000, 0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11110000,
+            0b10010000, 0b00100000, 0b10000000, 0b00010000, 0b00010000, 0b00010000, 0b10010000,
+            0b11110000, 0b01110000, 0b11110000, 0b11110000, 0b00010000, 0b11110000, 0b11110000,
+
+            0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11100000, 0b11110000, 0b11110000,
+            0b00010000, 0b10010000, 0b10010000, 0b10000000, 0b10010000, 0b10000000, 0b10000000,
+            0b00100000, 0b11110000, 0b11110000, 0b10000000, 0b10010000, 0b11110000, 0b11110000,
+            0b01000000, 0b10010000, 0b00010000, 0b10000000, 0b10010000, 0b10000000, 0b10000000,
+            0b01000000, 0b11110000, 0b11110000, 0b11110000, 0b11100000, 0b11110000, 0b10000000,
+        ];
+
+        for i in 0 .. sprites.len() {
+            mem[i] = sprites[i];
+        }
+    }
+
     /// Read the whole rom file and dumps it into memory
-    fn read_rom(mem: &mut [u8], mut rom_file: &File) {
+    fn load_rom(mem: &mut [u8], mut rom_file: &File) {
         let mut buf: Vec<u8> = Vec::new();
 
         // Ensure that we are reading from the beginning of the file
