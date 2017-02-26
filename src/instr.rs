@@ -502,6 +502,68 @@ impl fmt::Display for AddI {
     }
 }
 
+/// *Fx55 - LD [I], Vx* :: Store registers V0 through Vx in memory starting at location I.
+///
+/// The interpreter copies the values of registers V0 through Vx into memory,
+/// starting at the address in I.
+#[derive(Default)]
+struct SaveRegs {
+    raw: u16,
+    max_reg: usize,
+}
+
+impl Instr for SaveRegs {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.max_reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        for i in 0..self.max_reg {
+            let addr = cpu.get_i() as usize + i;
+            let value = cpu.get_vx(i);
+            cpu.put_mem(addr, value);
+        }
+    }
+}
+
+impl fmt::Display for SaveRegs {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Ld [I], V{:x}", self.raw, self.max_reg)
+    }
+}
+
+/// *Fx65 - LD Vx, [I]* :: Read registers V0 through Vx from memory starting at location I.
+///
+/// The interpreter reads values from memory starting at location I into registers
+/// V0 through Vx.
+#[derive(Default)]
+struct RestoreRegs {
+    raw: u16,
+    max_reg: usize,
+}
+
+impl Instr for RestoreRegs {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.max_reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        for i in 0..self.max_reg {
+            let addr = cpu.get_i() as usize + i;
+            let value = cpu.read_mem(addr, 1)[0];
+            cpu.set_vx(i, value)
+        }
+    }
+}
+
+impl fmt::Display for RestoreRegs {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Ld V{:x}, [I]", self.raw, self.max_reg)
+    }
+}
+
 /// Dummy instruction. Does nothing
 #[derive(Default)]
 struct Dummy {
@@ -559,6 +621,8 @@ pub fn parse(raw: u16) -> Box<Instr> {
             match raw & 0x00ff {
                 0x000a => Box::new(Dummy::default()),
                 0x001e => Box::new(AddI::default()),
+                0x0055 => Box::new(SaveRegs::default()),
+                0x0065 => Box::new(RestoreRegs::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
@@ -745,23 +809,5 @@ pub fn ld_f_vx(cpu: &mut Cpu, instr: u16) {
 /// location I+2.
 #[allow(dead_code, unused_variables)]
 pub fn ld_b_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx55 - LD [I], Vx* :: Store registers V0 through Vx in memory starting at location I.
-///
-/// The interpreter copies the values of registers V0 through Vx into memory,
-/// starting at the address in I.
-#[allow(dead_code, unused_variables)]
-pub fn ld_i_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx65 - LD Vx, [I]* :: Read registers V0 through Vx from memory starting at location I.
-///
-/// The interpreter reads values from memory starting at location I into registers
-/// V0 through Vx.
-#[allow(dead_code, unused_variables)]
-pub fn ld_vx_i(cpu: &mut Cpu, instr: u16) {
     // TODO
 }

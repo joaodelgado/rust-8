@@ -100,6 +100,11 @@ impl<'a> Cpu<'a> {
         self.mem[addr..(addr + n)].to_vec()
     }
 
+    /// Read n bytes from memory, starting at addr
+    pub fn put_mem(&mut self, addr: usize, value: u8) {
+        self.mem[addr] = value;
+    }
+
     /// Sets the PC register to a given address.
     pub fn get_pc(&self) -> u16 {
         self.r_pc
