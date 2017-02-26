@@ -475,6 +475,33 @@ impl fmt::Display for Drw {
     }
 }
 
+/// *Fx1E - ADD I, Vx* :: Set I = I + Vx.
+///
+/// The values of I and Vx are added, and the results are stored in I.
+#[derive(Default)]
+struct AddI {
+    raw: u16,
+    reg: usize,
+}
+
+impl Instr for AddI {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let result = cpu.get_vx(self.reg) as u16 + cpu.get_i();
+        cpu.set_i(result);
+    }
+}
+
+impl fmt::Display for AddI {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Add I, V{:x}", self.raw, self.reg)
+    }
+}
+
 ///
 ///
 ///
@@ -505,6 +532,12 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xa000 => Box::new(LdI::default()),
         0xc000 => Box::new(Rnd::default()),
         0xd000 => Box::new(Drw::default()),
+        0xf000 => {
+            match raw & 0x00ff {
+                0x001e => Box::new(AddI::default()),
+                _ => panic!("unsupported instruction: {:04x}", raw),
+            }
+        }
         _ => panic!("unsupported instruction: {:04x}", raw),
     };
 
@@ -668,14 +701,6 @@ pub fn ld_dt_vx(cpu: &mut Cpu, instr: u16) {
 /// ST is set equal to the value of Vx.
 #[allow(dead_code, unused_variables)]
 pub fn ld_st_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx1E - ADD I, Vx* :: Set I = I + Vx.
-///
-/// The values of I and Vx are added, and the results are stored in I.
-#[allow(dead_code, unused_variables)]
-pub fn add_i_vx(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
