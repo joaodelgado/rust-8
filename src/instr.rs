@@ -268,6 +268,46 @@ impl fmt::Display for And {
     }
 }
 
+/// *8xy5 - SUB Vx, Vy* :: Set Vx = Vx - Vy, set VF = NOT borrow.
+///
+/// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
+/// and the results stored in Vx.
+#[derive(Default)]
+struct Sub {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for Sub {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let vx = cpu.get_vx(self.x);
+        let vy = cpu.get_vx(self.y);
+
+        if vx > vy {
+            cpu.set_vx(0xf, 1);
+        } else {
+            cpu.set_vx(0xf, 0);
+        }
+
+        let new_value = cpu.get_vx(self.x).wrapping_sub(cpu.get_vx(self.y));
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for Sub {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SUB V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
+
 /// *Annn - LD I, addr* :: Set I = nnn.
 ///
 /// The value of register I is set to nnn.
@@ -426,6 +466,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
             match raw & 0x000f {
                 0x0000 => Box::new(LdReg::default()),
                 0x0002 => Box::new(And::default()),
+                0x0005 => Box::new(Sub::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
@@ -509,15 +550,6 @@ pub fn xor_vx_vy(cpu: &mut Cpu, instr: u16) {
 /// the result are kept, and stored in Vx.
 #[allow(dead_code, unused_variables)]
 pub fn add_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy5 - SUB Vx, Vy* :: Set Vx = Vx - Vy, set VF = NOT borrow.
-///
-/// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
-/// and the results stored in Vx.
-#[allow(dead_code, unused_variables)]
-pub fn sub_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
