@@ -108,6 +108,41 @@ impl fmt::Display for Se {
     }
 }
 
+/// *4xkk - SNE Vx, byte* :: Skip next instruction if Vx != kk.
+///
+/// The interpreter compares register Vx to kk, and if they are not equal,
+/// increments the program counter by 2.
+#[derive(Default)]
+struct Sne {
+    raw: u16,
+    reg: usize,
+    value: u8,
+}
+
+impl Instr for Sne {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+        self.value = (instr & 0x00ff) as u8;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        if cpu.get_vx(self.reg) != self.value {
+            cpu.inc_pc();
+        }
+    }
+}
+
+impl fmt::Display for Sne {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "{:04x} - SNE V{:x}, {:02x}",
+               self.raw,
+               self.reg,
+               self.value)
+    }
+}
+
 /// *6xkk - LD Vx, byte* :: Set Vx = kk.
 ///
 /// The interpreter puts the value kk into register Vx.
@@ -325,6 +360,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0x1000 => Box::new(Jp::default()),
         0x2000 => Box::new(Call::default()),
         0x3000 => Box::new(Se::default()),
+        0x4000 => Box::new(Sne::default()),
         0x6000 => Box::new(Ld::default()),
         0x7000 => Box::new(Add::default()),
         0xa000 => Box::new(LdI::default()),
@@ -367,15 +403,6 @@ pub fn cls(cpu: &mut Cpu, instr: u16) {
 /// stack, then subtracts 1 from the stack pointer.
 #[allow(dead_code, unused_variables)]
 pub fn ret(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *4xkk - SNE Vx, byte* :: Skip next instruction if Vx != kk.
-///
-/// The interpreter compares register Vx to kk, and if they are not equal,
-/// increments the program counter by 2.
-#[allow(dead_code, unused_variables)]
-pub fn sne_vx_byte(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
