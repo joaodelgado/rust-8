@@ -502,6 +502,29 @@ impl fmt::Display for AddI {
     }
 }
 
+/// Dummy instruction. Does nothing
+#[derive(Default)]
+struct Dummy {
+    raw: u16,
+}
+
+impl Instr for Dummy {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+    }
+
+    #[allow(unused_variables)]
+    fn execute(&self, cpu: &mut Cpu) {
+        // Do nothing
+    }
+}
+
+impl fmt::Display for Dummy {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Dummy", self.raw)
+    }
+}
+
 ///
 ///
 ///
@@ -534,6 +557,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xd000 => Box::new(Drw::default()),
         0xf000 => {
             match raw & 0x00ff {
+                0x000a => Box::new(Dummy::default()),
                 0x001e => Box::new(AddI::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
