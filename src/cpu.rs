@@ -116,6 +116,20 @@ impl<'a> Cpu<'a> {
         self.r_pc = addr;
     }
 
+    /// Increment the stack pointer and put value in the top of the stack
+    pub fn push_stack(&mut self, value: u16) {
+        self.r_sp += 1;
+        self.stack[self.r_sp as usize] = value;
+    }
+
+    /// Gets the value at the top of the stack and then decrements the stack pointer
+    pub fn pop_stack(&mut self) -> u16 {
+        let value = self.stack[self.r_sp as usize];
+        self.r_sp -= 1;
+
+        value
+    }
+
     /// Gets the value of the Vx register.
     pub fn get_vx(&self, reg: usize) -> u8 {
         self.r_vx[reg]
@@ -134,16 +148,6 @@ impl<'a> Cpu<'a> {
     /// Sets the i register to a given value.
     pub fn set_i(&mut self, value: u16) {
         self.r_i = value;
-    }
-
-    /// Increments the SP register by 1.
-    pub fn inc_sp(&mut self) {
-        self.r_sp += 1;
-    }
-
-    /// Sets a value on the stack where SP is currently pointing.
-    pub fn set_stack(&mut self, value: u16) {
-        self.stack[self.r_sp as usize] = value;
     }
 
     pub fn get_display(&mut self) -> &mut Display<'a> {

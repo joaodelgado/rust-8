@@ -13,6 +13,33 @@ pub trait Instr: fmt::Display {
     fn execute(&self, cpu: &mut Cpu);
 }
 
+/// *00EE - RET* :: Return from a subroutine.
+///
+/// The interpreter sets the program counter to the address at the top of the
+/// stack, then subtracts 1 from the stack pointer.
+#[derive(Default)]
+struct Ret {
+    raw: u16,
+}
+
+
+impl Instr for Ret {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let new_pc = cpu.pop_stack();
+        cpu.set_pc(new_pc);
+    }
+}
+
+impl fmt::Display for Ret {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - RET", self.raw)
+    }
+}
+
 /// *1nnn - JP addr* :: Jump to location nnn.
 ///
 /// The interpreter sets the program counter to nnn.
@@ -57,10 +84,9 @@ impl Instr for Call {
     }
 
     fn execute(&self, cpu: &mut Cpu) {
-        // Increment SP and store the current PC
+        // Store the current PC in the stack
         let cur_pc = cpu.get_pc();
-        cpu.inc_sp();
-        cpu.set_stack(cur_pc);
+        cpu.push_stack(cur_pc);
 
         // Set the PC to the new address
         cpu.set_pc(self.addr);
@@ -456,6 +482,12 @@ impl fmt::Display for Drw {
 
 pub fn parse(raw: u16) -> Box<Instr> {
     let mut instr: Box<Instr> = match raw & 0xf000 {
+        0x0000 => {
+            match raw {
+                0x00ee => Box::new(Ret::default()),
+                _ => panic!("unsupported instruction: {:04x}", raw),
+            }
+        }
         0x1000 => Box::new(Jp::default()),
         0x2000 => Box::new(Call::default()),
         0x3000 => Box::new(Se::default()),
@@ -501,15 +533,6 @@ pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
 /// *00E0 - CLS* :: Clear the display.
 #[allow(dead_code, unused_variables)]
 pub fn cls(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *00EE - RET* :: Return from a subroutine.
-///
-/// The interpreter sets the program counter to the address at the top of the
-/// stack, then subtracts 1 from the stack pointer.
-#[allow(dead_code, unused_variables)]
-pub fn ret(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
