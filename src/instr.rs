@@ -208,6 +208,35 @@ impl fmt::Display for Add {
     }
 }
 
+/// *8xy0 - LD Vx, Vy* :: Set Vx = Vy.
+///
+/// Stores the value of register Vy in register Vx.
+#[derive(Default)]
+struct LdReg {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for LdReg {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let new_value = cpu.get_vx(self.y);
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for LdReg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - LD V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
 /// *8xy2 - AND Vx, Vy* :: Set Vx = Vx AND Vy.
 ///
 /// Performs a bitwise AND on the values of Vx and Vy, then stores the result in
@@ -395,6 +424,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0x7000 => Box::new(Add::default()),
         0x8000 => {
             match raw & 0x000f {
+                0x0000 => Box::new(LdReg::default()),
                 0x0002 => Box::new(And::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
@@ -448,14 +478,6 @@ pub fn ret(cpu: &mut Cpu, instr: u16) {
 /// increments the program counter by 2.
 #[allow(dead_code, unused_variables)]
 pub fn se_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy0 - LD Vx, Vy* :: Set Vx = Vy.
-///
-/// Stores the value of register Vy in register Vx.
-#[allow(dead_code, unused_variables)]
-pub fn ld_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
