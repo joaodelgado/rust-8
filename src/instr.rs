@@ -63,7 +63,7 @@ impl Instr for Call {
         cpu.set_stack(cur_pc);
 
         // Set the PC to the new address
-        cpu.set_pc(self.addr / 4);
+        cpu.set_pc(self.addr);
     }
 }
 
