@@ -208,6 +208,36 @@ impl fmt::Display for Add {
     }
 }
 
+/// *8xy2 - AND Vx, Vy* :: Set Vx = Vx AND Vy.
+///
+/// Performs a bitwise AND on the values of Vx and Vy, then stores the result in
+/// Vx. A bitwise AND compares the corrseponding bits from two values, and if both
+/// bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
+#[derive(Default)]
+struct And {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for And {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let new_value = cpu.get_vx(self.x) & cpu.get_vx(self.y);
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for And {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - AND V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
 
 /// *Annn - LD I, addr* :: Set I = nnn.
 ///
@@ -363,6 +393,12 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0x4000 => Box::new(Sne::default()),
         0x6000 => Box::new(Ld::default()),
         0x7000 => Box::new(Add::default()),
+        0x8000 => {
+            match raw & 0x000f {
+                0x0002 => Box::new(And::default()),
+                _ => panic!("unsupported instruction: {:04x}", raw),
+            }
+        }
         0xa000 => Box::new(LdI::default()),
         0xc000 => Box::new(Rnd::default()),
         0xd000 => Box::new(Drw::default()),
@@ -430,16 +466,6 @@ pub fn ld_vx_vy(cpu: &mut Cpu, instr: u16) {
 /// is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 #[allow(dead_code, unused_variables)]
 pub fn or_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy2 - AND Vx, Vy* :: Set Vx = Vx AND Vy.
-///
-/// Performs a bitwise AND on the values of Vx and Vy, then stores the result in
-/// Vx. A bitwise AND compares the corrseponding bits from two values, and if both
-/// bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
-#[allow(dead_code, unused_variables)]
-pub fn and_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
