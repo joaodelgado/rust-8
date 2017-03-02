@@ -162,6 +162,11 @@ impl<'a> Cpu<'a> {
         self.r_i = value;
     }
 
+    pub fn dec_dt(&mut self) {
+        let value = self.r_dt.checked_sub(1).unwrap_or(0);
+        self.r_dt = value;
+    }
+
     /// Get a mutable reference to the display
     pub fn get_display(&mut self) -> &mut Display<'a> {
         &mut self.display

@@ -14,6 +14,22 @@ mod cpu;
 mod display;
 mod spec;
 
+fn tick(cpu: &mut cpu::Cpu, debug: bool) {
+    let instr = cpu.read_instr();
+    let cmd = instr::parse(instr);
+
+    if debug {
+        println!("Read: {}", cmd);
+    }
+
+    cpu.dec_dt();
+    instr::execute(cmd, cpu);
+
+    if debug {
+        println!("Current state: {}", cpu);
+    }
+}
+
 fn main() {
 
     let file_name = env::args().nth(1).expect("Provide a rom as the first argument.");
@@ -45,6 +61,9 @@ fn main() {
                     execute = !stepping;
                     cpu.reset_sync();
                     println!("Stepping: {}", stepping);
+                    if stepping {
+                        println!("Current state: {}", cpu);
+                    }
                 }
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     execute = true;
@@ -54,23 +73,12 @@ fn main() {
         }
 
         if execute {
-            let instr = cpu.read_instr();
-
-            let cmd = instr::parse(instr);
-            if stepping {
-                println!("Read: {}", cmd);
-            }
-
-            instr::execute(cmd, &mut cpu);
-            if stepping {
-                println!("Current state: {}", cpu);
-            }
-
+            tick(&mut cpu, stepping);
             execute = !stepping;
         }
 
         cpu.get_display().flush();
 
-        cpu.sync()
+        cpu.sync();
     }
 }
