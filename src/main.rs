@@ -1,10 +1,10 @@
 extern crate itertools;
 extern crate rand;
 extern crate sdl2;
+extern crate time;
 
 use std::env;
 use std::fs::File;
-use std::time::Duration;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -42,8 +42,9 @@ fn main() {
                 }
                 Event::KeyDown { keycode: Some(Keycode::S), .. } => {
                     stepping = !stepping;
+                    execute = !stepping;
+                    cpu.reset_sync();
                     println!("Stepping: {}", stepping);
-                    execute = !stepping
                 }
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     execute = true;
@@ -56,45 +57,20 @@ fn main() {
             let instr = cpu.read_instr();
 
             let cmd = instr::parse(instr);
-            println!("Read: {}", cmd);
+            if stepping {
+                println!("Read: {}", cmd);
+            }
 
             instr::execute(cmd, &mut cpu);
-            println!("Current state: {}", cpu);
+            if stepping {
+                println!("Current state: {}", cpu);
+            }
 
             execute = !stepping;
         }
 
         cpu.get_display().flush();
 
-        std::thread::sleep(Duration::from_millis(10));
+        cpu.sync()
     }
-
-    // let mut running = true;
-    // while running {
-    // let instr = cpu.read_instr();
-
-    // let cmd = instr::parse(instr);
-    // println!("Read: {}", cmd);
-    // instr::execute(cmd, &mut cpu);
-    // println!("Current state: {}", cpu);
-
-
-    // let mut waiting = true;
-    // while waiting {
-    // let mut input = String::new();
-    // io::stdin().read_line(&mut input).unwrap();
-    // input = input.trim().to_string();
-
-    // if input.starts_with('p') {
-    // println!("Current state: {}", cpu);
-    // } else if input.is_empty() {
-    // waiting = false;
-    // } else {
-    // waiting = false;
-    // running = false;
-    // }
-    // }
-    // }
-
-    // println!("Final state: {}", cpu);
 }

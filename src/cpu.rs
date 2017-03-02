@@ -1,12 +1,17 @@
+use std::cmp::max;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use std::thread;
+use std::time::Duration;
 
 use itertools::join;
 
 use sdl2::Sdl;
+
+use time::PreciseTime;
 
 use display::Display;
 use spec;
@@ -14,6 +19,7 @@ use spec;
 pub struct Cpu<'a> {
     display: Display<'a>,
     cur_instr: u16,
+    last_sync: PreciseTime,
 
     // Registers
     r_vx: [u8; 16],
@@ -37,6 +43,7 @@ impl<'a> Cpu<'a> {
         Cpu {
             display: Display::new(sdl_context),
             cur_instr: 0,
+            last_sync: PreciseTime::now(),
 
             r_vx: [0; 16],
             r_i: 0,
@@ -157,6 +164,20 @@ impl<'a> Cpu<'a> {
 
     pub fn get_display(&mut self) -> &mut Display<'a> {
         &mut self.display
+    }
+
+    pub fn reset_sync(&mut self) {
+        self.last_sync = PreciseTime::now();
+    }
+
+    pub fn sync(&mut self) {
+        let now = PreciseTime::now();
+
+        let ellapsed = spec::MILLI_PER_FRAME as i64 - self.last_sync.to(now).num_milliseconds();
+        let sleep = max(ellapsed, 0) as u64;
+
+        self.reset_sync();
+        thread::sleep(Duration::from_millis(sleep));
     }
 }
 

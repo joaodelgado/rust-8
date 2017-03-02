@@ -7,3 +7,4 @@ authors = ["João Delgado <joaomtdelgado@gmail.com>"]
 itertools = "0.5.9"
 rand = "0.3.15"
 sdl2 = "0.28"
+time = "0.1"

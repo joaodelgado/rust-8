@@ -6,3 +6,6 @@ pub const DISPLAY_SCALE: u32 = 10;
 
 pub const MEM_SIZE: usize = 4096;
 pub const PROGRAM_START: usize = 0x200;
+
+pub const FPS: usize = 60;
+pub const MILLI_PER_FRAME: usize = 1000 / FPS;
