@@ -162,14 +162,17 @@ impl<'a> Cpu<'a> {
         self.r_i = value;
     }
 
+    /// Get a mutable reference to the display
     pub fn get_display(&mut self) -> &mut Display<'a> {
         &mut self.display
     }
 
+    /// Reset the last sync time to the current time
     pub fn reset_sync(&mut self) {
         self.last_sync = PreciseTime::now();
     }
 
+    /// Sleep for the necessary time to sync to the desired FPS
     pub fn sync(&mut self) {
         let now = PreciseTime::now();
 
