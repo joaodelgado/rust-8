@@ -10,16 +10,25 @@ use std::time::Duration;
 use itertools::join;
 
 use sdl2::Sdl;
+use sdl2::EventPump;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
 use time::PreciseTime;
 
 use display::Display;
 use spec;
+use instr;
 
 pub struct Cpu<'a> {
+    // Connected systems
     display: Display<'a>,
-    cur_instr: u16,
+
+    // Internal state
     last_sync: PreciseTime,
+    running: bool,
+    paused: bool,
+    debug: bool,
 
     // Registers
     r_vx: [u8; 16],
@@ -42,8 +51,11 @@ impl<'a> Cpu<'a> {
 
         Cpu {
             display: Display::new(sdl_context),
-            cur_instr: 0,
+
             last_sync: PreciseTime::now(),
+            running: true,
+            paused: false,
+            debug: true,
 
             r_vx: [0; 16],
             r_i: 0,
@@ -98,7 +110,6 @@ impl<'a> Cpu<'a> {
                     self.mem[self.r_pc as usize + 1] as u16;
 
         self.inc_pc();
-        self.cur_instr = instr;
         instr
     }
 
@@ -177,6 +188,10 @@ impl<'a> Cpu<'a> {
         self.last_sync = PreciseTime::now();
     }
 
+    pub fn is_running(&self) -> bool {
+        self.running
+    }
+
     /// Sleep for the necessary time to sync to the desired FPS
     pub fn sync(&mut self) {
         let now = PreciseTime::now();
@@ -186,6 +201,52 @@ impl<'a> Cpu<'a> {
 
         self.reset_sync();
         thread::sleep(Duration::from_millis(sleep));
+    }
+
+    pub fn tick(&mut self, event_pump: &mut EventPump) {
+        for event in event_pump.poll_iter() {
+            match event {
+
+                Event::Quit { .. } |
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    self.running = false;
+                }
+                Event::KeyDown { keycode: Some(Keycode::P), .. } => {
+                    self.debug = !self.debug;
+                    self.paused = self.debug;
+                    self.reset_sync();
+                    println!("Stepping: {}", self.debug);
+                    if self.debug {
+                        println!("Current state: {}", self);
+                    }
+                }
+                Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                    self.paused = false;
+                }
+                _ => {}
+            }
+        }
+
+        if !self.paused {
+            let instr = self.read_instr();
+            let cmd = instr::parse(instr);
+
+            if self.debug {
+                println!("Read: {}", cmd);
+            }
+
+            self.dec_dt();
+            instr::execute(cmd, self);
+
+            if self.debug {
+                println!("Current state: {}", self);
+            }
+            self.paused = self.debug;
+        }
+
+        self.display.flush();
+
+        self.sync();
     }
 }
 
