@@ -219,7 +219,7 @@ impl Instr for Add {
     }
 
     fn execute(&self, cpu: &mut Cpu) {
-        let new_value = cpu.get_vx(self.reg) + self.value;
+        let new_value = cpu.get_vx(self.reg).wrapping_add(self.value);
         cpu.set_vx(self.reg, new_value);
     }
 }
