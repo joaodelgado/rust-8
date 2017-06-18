@@ -79,4 +79,8 @@ impl<'a> Display<'a> {
     pub fn flush(&mut self) {
         let _ = self.renderer.present();
     }
+
+    pub fn clear(&mut self) {
+        self.pixels = [[0u8; spec::DISPLAY_WIDTH as usize]; spec::DISPLAY_HEIGHT as usize];
+    }
 }

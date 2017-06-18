@@ -13,6 +13,30 @@ pub trait Instr: fmt::Display {
     fn execute(&self, cpu: &mut Cpu);
 }
 
+/// *00E0 - CLS* :: Clear the display.
+#[derive(Default)]
+struct Cls {
+    raw: u16,
+}
+
+
+impl Instr for Cls {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        cpu.get_display().clear();
+    }
+}
+
+impl fmt::Display for Cls {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - CLS", self.raw)
+    }
+}
+
+
 /// *00EE - RET* :: Return from a subroutine.
 ///
 /// The interpreter sets the program counter to the address at the top of the
@@ -771,6 +795,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
     let mut instr: Box<Instr> = match raw & 0xf000 {
         0x0000 => {
             match raw {
+                0x00e0 => Box::new(Cls::default()),
                 0x00ee => Box::new(Ret::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
@@ -828,12 +853,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 /// originally implemented. It is ignored by modern interpreters.
 #[allow(dead_code, unused_variables)]
 pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *00E0 - CLS* :: Clear the display.
-#[allow(dead_code, unused_variables)]
-pub fn cls(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
