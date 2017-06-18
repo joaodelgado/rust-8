@@ -530,6 +530,36 @@ impl fmt::Display for Drw {
     }
 }
 
+/// *Ex9E - SKP Vx* :: Skip next instruction if key with the value of Vx is pressed.
+///
+/// Checks the keyboard, and if the key corresponding to the value of Vx is
+/// currently in the down position, PC is increased by 2.
+#[derive(Default)]
+struct SkpVx {
+    raw: u16,
+    reg: usize,
+}
+
+impl Instr for SkpVx {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let value = cpu.get_vx(self.reg) as usize;
+        if cpu.get_keyboard().pressed(value) {
+            cpu.inc_pc();
+        }
+    }
+}
+
+impl fmt::Display for SkpVx {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SKP V{:x}", self.raw, self.reg)
+    }
+}
+
 /// *Fx07 - LD Vx, DT* :: Set Vx = delay timer value.
 ///
 /// The value of DT is placed into Vx.
@@ -818,6 +848,12 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xa000 => Box::new(LdI::default()),
         0xc000 => Box::new(Rnd::default()),
         0xd000 => Box::new(Drw::default()),
+        0xe000 => {
+            match raw & 0x00ff {
+                0x009e => Box::new(SkpVx::default()),
+                _ => panic!("unsupported instruction: {:04x}", raw),
+            }
+        }
         0xf000 => {
             match raw & 0x00ff {
                 0x0007 => Box::new(LdVxDt::default()),
@@ -928,15 +964,6 @@ pub fn sne_vx_vy(cpu: &mut Cpu, instr: u16) {
 /// The program counter is set to nnn plus the value of V0.
 #[allow(dead_code, unused_variables)]
 pub fn jp_v0_addr(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Ex9E - SKP Vx* :: Skip next instruction if key with the value of Vx is pressed.
-///
-/// Checks the keyboard, and if the key corresponding to the value of Vx is
-/// currently in the down position, PC is increased by 2.
-#[allow(dead_code, unused_variables)]
-pub fn skp_vx(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 

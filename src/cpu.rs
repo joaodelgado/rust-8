@@ -208,6 +208,11 @@ impl<'a> Cpu<'a> {
         &mut self.display
     }
 
+    /// Get a mutable reference to the keyboard
+    pub fn get_keyboard(&mut self) -> &mut Keyboard {
+        &mut self.keyboard
+    }
+
     /// Reset the last sync time to the current time
     pub fn reset_sync(&mut self) {
         self.last_sync = PreciseTime::now();
