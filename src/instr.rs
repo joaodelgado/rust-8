@@ -560,6 +560,40 @@ impl fmt::Display for AddI {
     }
 }
 
+/// *Fx33 - LD B, Vx* :: Store BCD representation of Vx in memory locations I, I+1, and I+2.
+///
+/// The interpreter takes the decimal value of Vx, and places the hundreds digit in
+/// memory at location in I, the tens digit at location I+1, and the ones digit at
+/// location I+2.
+#[derive(Default)]
+struct LdBCD {
+    raw: u16,
+    x: usize,
+}
+
+impl Instr for LdBCD {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let mut value = cpu.get_vx(self.x);
+        let mem_idx = cpu.get_i() as usize;
+        cpu.set_mem(mem_idx + 2, value % 10);
+        value /= 10;
+        cpu.set_mem(mem_idx + 1, value % 10);
+        value /= 10;
+        cpu.set_mem(mem_idx, value % 10);
+    }
+}
+
+impl fmt::Display for LdBCD {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Ld B, V{:x}", self.raw, self.x)
+    }
+}
+
 /// *Fx55 - LD [I], Vx* :: Store registers V0 through Vx in memory starting at location I.
 ///
 /// The interpreter copies the values of registers V0 through Vx into memory,
@@ -680,6 +714,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
             match raw & 0x00ff {
                 0x000a => Box::new(LdVxK::default()),
                 0x001e => Box::new(AddI::default()),
+                0x0033 => Box::new(LdBCD::default()),
                 0x0055 => Box::new(SaveRegs::default()),
                 0x0065 => Box::new(RestoreRegs::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
@@ -840,15 +875,5 @@ pub fn ld_st_vx(cpu: &mut Cpu, instr: u16) {
 /// Chip-8 hexadecimal font.
 #[allow(dead_code, unused_variables)]
 pub fn ld_f_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx33 - LD B, Vx* :: Store BCD representation of Vx in memory locations I, I+1, and I+2.
-///
-/// The interpreter takes the decimal value of Vx, and places the hundreds digit in
-/// memory at location in I, the tens digit at location I+1, and the ones digit at
-/// location I+2.
-#[allow(dead_code, unused_variables)]
-pub fn ld_b_vx(cpu: &mut Cpu, instr: u16) {
     // TODO
 }

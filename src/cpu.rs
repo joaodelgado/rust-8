@@ -162,6 +162,11 @@ impl<'a> Cpu<'a> {
         value
     }
 
+    /// Sets the address in memory to a given value, where x in the given index.
+    pub fn set_mem(&mut self, reg: usize, value: u8) {
+        self.mem[reg] = value;
+    }
+
     /// Gets the value of the Vx register.
     pub fn get_vx(&self, reg: usize) -> u8 {
         self.r_vx[reg]
