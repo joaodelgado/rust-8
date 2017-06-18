@@ -420,6 +420,40 @@ impl fmt::Display for Sub {
     }
 }
 
+/// *8xy6 - SHR Vx {, Vy}* :: Set Vx = Vx SHR 1.
+///
+/// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then
+/// Vx is divided by 2.
+#[derive(Default)]
+struct Shr {
+    raw: u16,
+    x: usize,
+}
+
+impl Instr for Shr {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let vx = cpu.get_vx(self.x);
+
+        if vx & 0x01 == 0x01 {
+            cpu.set_vx(0xf, 1);
+        } else {
+            cpu.set_vx(0xf, 0);
+        }
+
+        cpu.set_vx(self.x, vx / 2);
+    }
+}
+
+impl fmt::Display for Shr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SHR V{:x}", self.raw, self.x)
+    }
+}
 
 /// *Annn - LD I, addr* :: Set I = nnn.
 ///
@@ -906,6 +940,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
                 0x0002 => Box::new(And::default()),
                 0x0003 => Box::new(Xor::default()),
                 0x0005 => Box::new(Sub::default()),
+                0x0006 => Box::new(Shr::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
@@ -974,15 +1009,6 @@ pub fn or_vx_vy(cpu: &mut Cpu, instr: u16) {
 /// the result are kept, and stored in Vx.
 #[allow(dead_code, unused_variables)]
 pub fn add_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy6 - SHR Vx {, Vy}* :: Set Vx = Vx SHR 1.
-///
-/// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then
-/// Vx is divided by 2.
-#[allow(dead_code, unused_variables)]
-pub fn shr_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
