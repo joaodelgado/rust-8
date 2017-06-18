@@ -515,7 +515,7 @@ impl Instr for Shr {
             cpu.set_vx(0xf, 0);
         }
 
-        cpu.set_vx(self.x, vx / 2);
+        cpu.set_vx(self.x, vx >> 1);
     }
 }
 
@@ -561,6 +561,41 @@ impl Instr for SubN {
 impl fmt::Display for SubN {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:04x} - SUBN V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
+/// *8xyE - SHL Vx {, Vy}* :: Set Vx = Vx SHL 1.
+///
+/// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
+/// Then Vx is multiplied by 2.
+#[derive(Default)]
+struct Shl {
+    raw: u16,
+    x: usize,
+}
+
+impl Instr for Shl {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let vx = cpu.get_vx(self.x);
+
+        if vx & 0x01 == 0x01 {
+            cpu.set_vx(0xf, 1);
+        } else {
+            cpu.set_vx(0xf, 0);
+        }
+
+        cpu.set_vx(self.x, vx << 1);
+    }
+}
+
+impl fmt::Display for Shl {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SHL V{:x}", self.raw, self.x)
     }
 }
 
@@ -1054,6 +1089,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
                 0x0005 => Box::new(Sub::default()),
                 0x0006 => Box::new(Shr::default()),
                 0x0007 => Box::new(SubN::default()),
+                0x000e => Box::new(Shl::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
@@ -1095,15 +1131,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 ///
 ///
 ///
-
-/// *8xyE - SHL Vx {, Vy}* :: Set Vx = Vx SHL 1.
-///
-/// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
-/// Then Vx is multiplied by 2.
-#[allow(dead_code, unused_variables)]
-pub fn shl_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
 
 /// *9xy0 - SNE Vx, Vy* :: Skip next instruction if Vx != Vy.
 ///
