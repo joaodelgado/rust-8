@@ -599,6 +599,36 @@ impl fmt::Display for Shl {
     }
 }
 
+/// *9xy0 - SNE Vx, Vy* :: Skip next instruction if Vx != Vy.
+///
+/// The values of Vx and Vy are compared, and if they are not equal, the program
+/// counter is increased by 2.
+#[derive(Default)]
+struct SneV {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for SneV {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        if cpu.get_vx(self.x) != cpu.get_vx(self.y) {
+            cpu.inc_pc();
+        }
+    }
+}
+
+impl fmt::Display for SneV {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SNE V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
 
 /// *Annn - LD I, addr* :: Set I = nnn.
 ///
@@ -1093,6 +1123,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
+        0x9000 => Box::new(SneV::default()),
         0xa000 => Box::new(LdI::default()),
         0xc000 => Box::new(Rnd::default()),
         0xd000 => Box::new(Drw::default()),
@@ -1131,15 +1162,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 ///
 ///
 ///
-
-/// *9xy0 - SNE Vx, Vy* :: Skip next instruction if Vx != Vy.
-///
-/// The values of Vx and Vy are compared, and if they are not equal, the program
-/// counter is increased by 2.
-#[allow(dead_code, unused_variables)]
-pub fn sne_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
 
 /// *Bnnn - JP V0, addr* :: Jump to location nnn + V0.
 ///
