@@ -187,8 +187,14 @@ impl<'a> Cpu<'a> {
         self.r_i = value;
     }
 
+    /// Decreases the DT register by 1, wrapping.
     pub fn dec_dt(&mut self) {
         let value = self.r_dt.checked_sub(1).unwrap_or(0);
+        self.set_dt(value);
+    }
+
+    /// Sets the DT register to a given value
+    pub fn set_dt(&mut self, value: u8) {
         self.r_dt = value;
     }
 

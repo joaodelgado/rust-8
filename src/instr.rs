@@ -533,6 +533,33 @@ impl fmt::Display for LdVxK {
     }
 }
 
+/// *Fx15 - LD DT, Vx* :: Set delay timer = Vx.
+///
+/// DT is set equal to the value of Vx.
+#[derive(Default)]
+struct LdDt {
+    raw: u16,
+    reg: usize,
+}
+
+impl Instr for LdDt {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let value = cpu.get_vx(self.reg);
+        cpu.set_dt(value);
+    }
+}
+
+impl fmt::Display for LdDt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - LD DT, V{:x}", self.raw, self.reg)
+    }
+}
+
 /// *Fx1E - ADD I, Vx* :: Set I = I + Vx.
 ///
 /// The values of I and Vx are added, and the results are stored in I.
@@ -742,6 +769,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xf000 => {
             match raw & 0x00ff {
                 0x000a => Box::new(LdVxK::default()),
+                0x0015 => Box::new(LdDt::default()),
                 0x001e => Box::new(AddI::default()),
                 0x0029 => Box::new(LdSprite::default()),
                 0x0033 => Box::new(LdBCD::default()),
@@ -879,14 +907,6 @@ pub fn sknp_vx(cpu: &mut Cpu, instr: u16) {
 /// The value of DT is placed into Vx.
 #[allow(dead_code, unused_variables)]
 pub fn ld_vx_dt(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx15 - LD DT, Vx* :: Set delay timer = Vx.
-///
-/// DT is set equal to the value of Vx.
-#[allow(dead_code, unused_variables)]
-pub fn ld_dt_vx(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
