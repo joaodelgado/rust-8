@@ -16,7 +16,6 @@ impl Keyboard {
     pub fn press(&mut self, key: Keycode, state: bool) {
         let index = self.key_to_index(key);
         if index <= 0xf {
-            println!("Key changed: {} - {}", index, state);
             self.keys[index] = state;
         }
     }
