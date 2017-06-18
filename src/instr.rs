@@ -260,13 +260,13 @@ impl fmt::Display for Ld {
 ///
 /// Adds the value kk to the value of register Vx, then stores the result in Vx.
 #[derive(Default)]
-struct Add {
+struct AddB {
     raw: u16,
     reg: usize,
     value: u8,
 }
 
-impl Instr for Add {
+impl Instr for AddB {
     fn parse(&mut self, instr: u16) {
         self.raw = instr;
         self.reg = ((instr & 0x0f00) >> 8) as usize;
@@ -279,7 +279,7 @@ impl Instr for Add {
     }
 }
 
-impl fmt::Display for Add {
+impl fmt::Display for AddB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
                "{:04x} - ADD V{:x}, {:02x}",
@@ -378,6 +378,45 @@ impl Instr for Xor {
 impl fmt::Display for Xor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:04x} - XOR V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
+/// *8xy4 - ADD Vx, Vy* :: Set Vx = Vx + Vy, set VF = carry.
+///
+/// The values of Vx and Vy are added together. If the result is greater than
+/// 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of
+/// the result are kept, and stored in Vx.
+#[derive(Default)]
+struct AddV {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for AddV {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let (new_value, overflow) = cpu.get_vx(self.x).overflowing_add(cpu.get_vx(self.y));
+
+        cpu.set_vx(self.x, new_value);
+
+        if overflow {
+            cpu.set_vx(0xf, 1);
+        } else {
+            cpu.set_vx(0xf, 0);
+        }
+
+    }
+}
+
+impl fmt::Display for AddV {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - ADD V{:x}, V{:x}", self.raw, self.x, self.y)
     }
 }
 
@@ -933,12 +972,13 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0x4000 => Box::new(Sne::default()),
         0x5000 => Box::new(SeV::default()),
         0x6000 => Box::new(Ld::default()),
-        0x7000 => Box::new(Add::default()),
+        0x7000 => Box::new(AddB::default()),
         0x8000 => {
             match raw & 0x000f {
                 0x0000 => Box::new(LdReg::default()),
                 0x0002 => Box::new(And::default()),
                 0x0003 => Box::new(Xor::default()),
+                0x0004 => Box::new(AddV::default()),
                 0x0005 => Box::new(Sub::default()),
                 0x0006 => Box::new(Shr::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
@@ -999,16 +1039,6 @@ pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
 /// is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 #[allow(dead_code, unused_variables)]
 pub fn or_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy4 - ADD Vx, Vy* :: Set Vx = Vx + Vy, set VF = carry.
-///
-/// The values of Vx and Vy are added together. If the result is greater than
-/// 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of
-/// the result are kept, and stored in Vx.
-#[allow(dead_code, unused_variables)]
-pub fn add_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
