@@ -479,7 +479,7 @@ impl Instr for Sub {
             cpu.set_vx(0xf, 0);
         }
 
-        let new_value = cpu.get_vx(self.x).wrapping_sub(cpu.get_vx(self.y));
+        let new_value = vx.wrapping_sub(vy);
         cpu.set_vx(self.x, new_value);
     }
 }
@@ -524,6 +524,46 @@ impl fmt::Display for Shr {
         write!(f, "{:04x} - SHR V{:x}", self.raw, self.x)
     }
 }
+
+/// *8xy7 - SUBN Vx, Vy* :: Set Vx = Vy - Vx, set VF = NOT borrow.
+///
+/// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
+/// and the results stored in Vx.
+#[derive(Default)]
+struct SubN {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for SubN {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let vx = cpu.get_vx(self.x);
+        let vy = cpu.get_vx(self.y);
+
+        if vy > vx {
+            cpu.set_vx(0xf, 1);
+        } else {
+            cpu.set_vx(0xf, 0);
+        }
+
+        let new_value = vy.wrapping_sub(vx);
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for SubN {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SUBN V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
 
 /// *Annn - LD I, addr* :: Set I = nnn.
 ///
@@ -1013,6 +1053,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
                 0x0004 => Box::new(AddV::default()),
                 0x0005 => Box::new(Sub::default()),
                 0x0006 => Box::new(Shr::default()),
+                0x0007 => Box::new(SubN::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
         }
@@ -1054,15 +1095,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 ///
 ///
 ///
-
-/// *8xy7 - SUBN Vx, Vy* :: Set Vx = Vy - Vx, set VF = NOT borrow.
-///
-/// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
-/// and the results stored in Vx.
-#[allow(dead_code, unused_variables)]
-pub fn subn_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
 
 /// *8xyE - SHL Vx {, Vy}* :: Set Vx = Vx SHL 1.
 ///
