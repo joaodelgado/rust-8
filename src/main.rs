@@ -9,6 +9,7 @@ use std::fs::File;
 mod cpu;
 mod display;
 mod instr;
+mod keyboard;
 mod spec;
 
 fn main() {

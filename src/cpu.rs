@@ -17,12 +17,14 @@ use sdl2::keyboard::Keycode;
 use time::PreciseTime;
 
 use display::Display;
+use keyboard::Keyboard;
 use spec;
 use instr;
 
 pub struct Cpu<'a> {
     // Connected systems
     display: Display<'a>,
+    keyboard: Keyboard,
 
     // Internal state
     last_sync: PreciseTime,
@@ -51,6 +53,7 @@ impl<'a> Cpu<'a> {
 
         Cpu {
             display: Display::new(sdl_context),
+            keyboard: Keyboard::new(),
 
             last_sync: PreciseTime::now(),
             running: true,
@@ -126,6 +129,12 @@ impl<'a> Cpu<'a> {
     /// Sets the PC register to a given address.
     pub fn get_pc(&self) -> u16 {
         self.r_pc
+    }
+
+    /// Decrements the PC to the previous instruction
+    pub fn dec_pc(&mut self) {
+        let cur_pc = self.r_pc;
+        self.set_pc(cur_pc - 2);
     }
 
     /// Increments the PC to the next instruction
@@ -223,6 +232,12 @@ impl<'a> Cpu<'a> {
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     self.paused = false;
                 }
+                Event::KeyDown { keycode: Some(keycode), .. } => {
+                    self.keyboard.press(keycode, true);
+                }
+                Event::KeyUp { keycode: Some(keycode), .. } => {
+                    self.keyboard.press(keycode, false);
+                }
                 _ => {}
             }
         }
@@ -247,6 +262,16 @@ impl<'a> Cpu<'a> {
         self.display.flush();
 
         self.sync();
+    }
+
+    pub fn wait_for_input(&mut self, reg: usize) {
+        for i in 0..16 {
+            if self.keyboard.pressed(i) {
+                self.r_vx[reg] = i as u8;
+                return;
+            }
+        }
+        self.dec_pc()
     }
 }
 

@@ -475,6 +475,33 @@ impl fmt::Display for Drw {
     }
 }
 
+/// *Fx0A - LD Vx, K* :: Wait for a key press, store the value of the key in Vx.
+///
+/// All execution stops until a key is pressed, then the value of that key is
+/// stored in Vx.
+#[derive(Default)]
+struct LdVxK {
+    raw: u16,
+    reg: usize,
+}
+
+impl Instr for LdVxK {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        cpu.wait_for_input(self.reg);
+    }
+}
+
+impl fmt::Display for LdVxK {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - LD V{:x}, K", self.raw, self.reg)
+    }
+}
+
 /// *Fx1E - ADD I, Vx* :: Set I = I + Vx.
 ///
 /// The values of I and Vx are added, and the results are stored in I.
@@ -619,7 +646,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xd000 => Box::new(Drw::default()),
         0xf000 => {
             match raw & 0x00ff {
-                0x000a => Box::new(Dummy::default()),
+                0x000a => Box::new(LdVxK::default()),
                 0x001e => Box::new(AddI::default()),
                 0x0055 => Box::new(SaveRegs::default()),
                 0x0065 => Box::new(RestoreRegs::default()),
@@ -764,15 +791,6 @@ pub fn sknp_vx(cpu: &mut Cpu, instr: u16) {
 /// The value of DT is placed into Vx.
 #[allow(dead_code, unused_variables)]
 pub fn ld_vx_dt(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx0A - LD Vx, K* :: Wait for a key press, store the value of the key in Vx.
-///
-/// All execution stops until a key is pressed, then the value of that key is
-/// stored in Vx.
-#[allow(dead_code, unused_variables)]
-pub fn ld_vx_k(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
