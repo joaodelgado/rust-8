@@ -226,13 +226,7 @@ impl<'a> Cpu<'a> {
                     self.running = false;
                 }
                 Event::KeyDown { keycode: Some(Keycode::P), .. } => {
-                    self.debug = !self.debug;
-                    self.paused = self.debug;
-                    self.reset_sync();
-                    println!("Stepping: {}", self.debug);
-                    if self.debug {
-                        println!("Current state: {}", self);
-                    }
+                    self.debug_toggle();
                 }
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     self.paused = false;
@@ -277,6 +271,16 @@ impl<'a> Cpu<'a> {
             }
         }
         self.dec_pc()
+    }
+
+    pub fn debug_toggle(&mut self) {
+        self.debug = !self.debug;
+        self.paused = self.debug;
+        self.reset_sync();
+        println!("Stepping: {}", self.debug);
+        if self.debug {
+            println!("Current state: {}", self);
+        }
     }
 }
 

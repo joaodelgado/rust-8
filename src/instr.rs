@@ -560,6 +560,35 @@ impl fmt::Display for AddI {
     }
 }
 
+/// *Fx29 - LD F, Vx* :: Set I = location of sprite for digit Vx.
+///
+/// The value of I is set to the location for the hexadecimal sprite corresponding
+/// to the value of Vx. See section 2.4, Display, for more information on the
+/// Chip-8 hexadecimal font.
+#[derive(Default)]
+struct LdSprite {
+    raw: u16,
+    x: usize,
+}
+
+impl Instr for LdSprite {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let value = cpu.get_vx(self.x) as u16;
+        cpu.set_i(value * 5);
+    }
+}
+
+impl fmt::Display for LdSprite {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - Ld F, V{:x}", self.raw, self.x)
+    }
+}
+
 /// *Fx33 - LD B, Vx* :: Store BCD representation of Vx in memory locations I, I+1, and I+2.
 ///
 /// The interpreter takes the decimal value of Vx, and places the hundreds digit in
@@ -714,6 +743,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
             match raw & 0x00ff {
                 0x000a => Box::new(LdVxK::default()),
                 0x001e => Box::new(AddI::default()),
+                0x0029 => Box::new(LdSprite::default()),
                 0x0033 => Box::new(LdBCD::default()),
                 0x0055 => Box::new(SaveRegs::default()),
                 0x0065 => Box::new(RestoreRegs::default()),
@@ -865,15 +895,5 @@ pub fn ld_dt_vx(cpu: &mut Cpu, instr: u16) {
 /// ST is set equal to the value of Vx.
 #[allow(dead_code, unused_variables)]
 pub fn ld_st_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx29 - LD F, Vx* :: Set I = location of sprite for digit Vx.
-///
-/// The value of I is set to the location for the hexadecimal sprite corresponding
-/// to the value of Vx. See section 2.4, Display, for more information on the
-/// Chip-8 hexadecimal font.
-#[allow(dead_code, unused_variables)]
-pub fn ld_f_vx(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
