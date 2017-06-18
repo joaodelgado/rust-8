@@ -187,6 +187,11 @@ impl<'a> Cpu<'a> {
         self.r_i = value;
     }
 
+    /// Gets the value of the DT register
+    pub fn get_dt(&mut self) -> u8 {
+        self.r_dt
+    }
+
     /// Decreases the DT register by 1, wrapping.
     pub fn dec_dt(&mut self) {
         let value = self.r_dt.checked_sub(1).unwrap_or(0);

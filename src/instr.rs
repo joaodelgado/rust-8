@@ -506,6 +506,33 @@ impl fmt::Display for Drw {
     }
 }
 
+/// *Fx07 - LD Vx, DT* :: Set Vx = delay timer value.
+///
+/// The value of DT is placed into Vx.
+#[derive(Default)]
+struct LdVxDt {
+    raw: u16,
+    reg: usize,
+}
+
+impl Instr for LdVxDt {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.reg = ((instr & 0x0f00) >> 8) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let value = cpu.get_dt();
+        cpu.set_vx(self.reg, value);
+    }
+}
+
+impl fmt::Display for LdVxDt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - LD V{:x}, DT", self.raw, self.reg)
+    }
+}
+
 /// *Fx0A - LD Vx, K* :: Wait for a key press, store the value of the key in Vx.
 ///
 /// All execution stops until a key is pressed, then the value of that key is
@@ -768,6 +795,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0xd000 => Box::new(Drw::default()),
         0xf000 => {
             match raw & 0x00ff {
+                0x0007 => Box::new(LdVxDt::default()),
                 0x000a => Box::new(LdVxK::default()),
                 0x0015 => Box::new(LdDt::default()),
                 0x001e => Box::new(AddI::default()),
@@ -899,14 +927,6 @@ pub fn skp_vx(cpu: &mut Cpu, instr: u16) {
 /// currently in the up position, PC is increased by 2.
 #[allow(dead_code, unused_variables)]
 pub fn sknp_vx(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *Fx07 - LD Vx, DT* :: Set Vx = delay timer value.
-///
-/// The value of DT is placed into Vx.
-#[allow(dead_code, unused_variables)]
-pub fn ld_vx_dt(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
