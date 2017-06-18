@@ -656,6 +656,33 @@ impl fmt::Display for LdI {
     }
 }
 
+/// *Bnnn - JP V0, addr* :: Jump to location nnn + V0.
+///
+/// The program counter is set to nnn plus the value of V0.
+#[derive(Default)]
+struct JpV0 {
+    raw: u16,
+    addr: u16,
+}
+
+impl Instr for JpV0 {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.addr = instr & 0x0fff;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let incr = cpu.get_vx(0) as u16;
+        cpu.set_pc(self.addr + incr);
+    }
+}
+
+impl fmt::Display for JpV0 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - JP V0, {:03x}", self.raw, self.addr)
+    }
+}
+
 /// *Cxkk - RND Vx, byte* :: Set Vx = random byte AND kk.
 ///
 /// The interpreter generates a random number from 0 to 255, which is then ANDed
@@ -1125,6 +1152,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         }
         0x9000 => Box::new(SneV::default()),
         0xa000 => Box::new(LdI::default()),
+        0xb000 => Box::new(JpV0::default()),
         0xc000 => Box::new(Rnd::default()),
         0xd000 => Box::new(Drw::default()),
         0xe000 => {
@@ -1162,14 +1190,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 ///
 ///
 ///
-
-/// *Bnnn - JP V0, addr* :: Jump to location nnn + V0.
-///
-/// The program counter is set to nnn plus the value of V0.
-#[allow(dead_code, unused_variables)]
-pub fn jp_v0_addr(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
 
 /// *Fx18 - LD ST, Vx* :: Set sound timer = Vx.
 ///
