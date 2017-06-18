@@ -349,6 +349,38 @@ impl fmt::Display for And {
     }
 }
 
+/// *8xy3 - XOR Vx, Vy* :: Set Vx = Vx XOR Vy.
+///
+/// Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the
+/// result in Vx. An exclusive OR compares the corrseponding bits from two values,
+/// and if the bits are not both the same, then the corresponding bit in the result
+/// is set to 1. Otherwise, it is 0.
+#[derive(Default)]
+struct Xor {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for Xor {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let new_value = cpu.get_vx(self.x) ^ cpu.get_vx(self.y);
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for Xor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - XOR V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
 /// *8xy5 - SUB Vx, Vy* :: Set Vx = Vx - Vy, set VF = NOT borrow.
 ///
 /// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
@@ -872,6 +904,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
             match raw & 0x000f {
                 0x0000 => Box::new(LdReg::default()),
                 0x0002 => Box::new(And::default()),
+                0x0003 => Box::new(Xor::default()),
                 0x0005 => Box::new(Sub::default()),
                 _ => panic!("unsupported instruction: {:04x}", raw),
             }
@@ -931,17 +964,6 @@ pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
 /// is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 #[allow(dead_code, unused_variables)]
 pub fn or_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy3 - XOR Vx, Vy* :: Set Vx = Vx XOR Vy.
-///
-/// Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the
-/// result in Vx. An exclusive OR compares the corrseponding bits from two values,
-/// and if the bits are not both the same, then the corresponding bit in the result
-/// is set to 1. Otherwise, it is 0.
-#[allow(dead_code, unused_variables)]
-pub fn xor_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
