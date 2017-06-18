@@ -318,6 +318,37 @@ impl fmt::Display for LdReg {
     }
 }
 
+/// *8xy1 - OR Vx, Vy* :: Set Vx = Vx OR Vy.
+///
+/// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
+/// A bitwise OR compares the corrseponding bits from two values, and if either bit
+/// is 1, then the same bit in the result is also 1. Otherwise, it is 0.
+#[derive(Default)]
+struct Or {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for Or {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        let new_value = cpu.get_vx(self.x) | cpu.get_vx(self.y);
+        cpu.set_vx(self.x, new_value);
+    }
+}
+
+impl fmt::Display for Or {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - OR V{:x}, V{:x}", self.raw, self.x, self.y)
+    }
+}
+
 /// *8xy2 - AND Vx, Vy* :: Set Vx = Vx AND Vy.
 ///
 /// Performs a bitwise AND on the values of Vx and Vy, then stores the result in
@@ -976,6 +1007,7 @@ pub fn parse(raw: u16) -> Box<Instr> {
         0x8000 => {
             match raw & 0x000f {
                 0x0000 => Box::new(LdReg::default()),
+                0x0001 => Box::new(Or::default()),
                 0x0002 => Box::new(And::default()),
                 0x0003 => Box::new(Xor::default()),
                 0x0004 => Box::new(AddV::default()),
@@ -1022,25 +1054,6 @@ pub fn execute(inst: Box<Instr>, cpu: &mut Cpu) {
 ///
 ///
 ///
-
-/// *0nnn - SYS addr* :: Jump to a machine code routine at nnn.
-///
-/// This instruction is only used on the old computers on which Chip-8 was
-/// originally implemented. It is ignored by modern interpreters.
-#[allow(dead_code, unused_variables)]
-pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *8xy1 - OR Vx, Vy* :: Set Vx = Vx OR Vy.
-///
-/// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
-/// A bitwise OR compares the corrseponding bits from two values, and if either bit
-/// is 1, then the same bit in the result is also 1. Otherwise, it is 0.
-#[allow(dead_code, unused_variables)]
-pub fn or_vx_vy(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
 
 /// *8xy7 - SUBN Vx, Vy* :: Set Vx = Vy - Vx, set VF = NOT borrow.
 ///
