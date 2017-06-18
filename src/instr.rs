@@ -104,13 +104,13 @@ impl fmt::Display for Call {
 /// The interpreter compares register Vx to kk, and if they are equal, increments
 /// the program counter by 2.
 #[derive(Default)]
-struct Se {
+struct SeB {
     raw: u16,
     reg: usize,
     value: u8,
 }
 
-impl Instr for Se {
+impl Instr for SeB {
     fn parse(&mut self, instr: u16) {
         self.raw = instr;
         self.reg = ((instr & 0x0f00) >> 8) as usize;
@@ -124,7 +124,7 @@ impl Instr for Se {
     }
 }
 
-impl fmt::Display for Se {
+impl fmt::Display for SeB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
                "{:04x} - SE V{:x}, {:02x}",
@@ -166,6 +166,37 @@ impl fmt::Display for Sne {
                self.raw,
                self.reg,
                self.value)
+    }
+}
+
+/// *5xy0 - SE Vx, Vy* :: Skip next instruction if Vx = Vy.
+///
+/// The interpreter compares register Vx to register Vy, and if they are equal,
+/// increments the program counter by 2.
+#[derive(Default)]
+struct SeV {
+    raw: u16,
+    x: usize,
+    y: usize,
+}
+
+impl Instr for SeV {
+    fn parse(&mut self, instr: u16) {
+        self.raw = instr;
+        self.x = ((instr & 0x0f00) >> 8) as usize;
+        self.y = ((instr & 0x00f0) >> 4) as usize;
+    }
+
+    fn execute(&self, cpu: &mut Cpu) {
+        if cpu.get_vx(self.x) == cpu.get_vx(self.y) {
+            cpu.inc_pc();
+        }
+    }
+}
+
+impl fmt::Display for SeV {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:04x} - SE V{:x}, V{:x}", self.raw, self.x, self.y)
     }
 }
 
@@ -629,8 +660,9 @@ pub fn parse(raw: u16) -> Box<Instr> {
         }
         0x1000 => Box::new(Jp::default()),
         0x2000 => Box::new(Call::default()),
-        0x3000 => Box::new(Se::default()),
+        0x3000 => Box::new(SeB::default()),
         0x4000 => Box::new(Sne::default()),
+        0x5000 => Box::new(SeV::default()),
         0x6000 => Box::new(Ld::default()),
         0x7000 => Box::new(Add::default()),
         0x8000 => {
@@ -681,15 +713,6 @@ pub fn sys_addr(cpu: &mut Cpu, instr: u16) {
 /// *00E0 - CLS* :: Clear the display.
 #[allow(dead_code, unused_variables)]
 pub fn cls(cpu: &mut Cpu, instr: u16) {
-    // TODO
-}
-
-/// *5xy0 - SE Vx, Vy* :: Skip next instruction if Vx = Vy.
-///
-/// The interpreter compares register Vx to register Vy, and if they are equal,
-/// increments the program counter by 2.
-#[allow(dead_code, unused_variables)]
-pub fn se_vx_vy(cpu: &mut Cpu, instr: u16) {
     // TODO
 }
 
